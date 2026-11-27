@@ -1,0 +1,5 @@
+# Cloudflare Worker (server code, local secrets, build files) – kept off GitHub
+worker/
+
+# Original stand-alone widget (now built into index.html)
+images/dancing-santa.html

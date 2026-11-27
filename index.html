@@ -485,6 +485,48 @@
     .pairs-table td { padding: 8px 4px; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
     .pairs-table td.arrow { text-align: center; width: 40px; }
 
+    /* ===================== ONLINE SYNC BOX (step 3) ===================== */
+    .sync-box {
+      background: #f3f8f5;
+      border: 1px solid #cfe5d7;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin: 14px 0;
+      font-size: 0.92rem;
+    }
+    .sync-box .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+    .sync-box input { flex: 1 1 180px; }
+    .sync-status { font-weight: 600; }
+    .sync-status.ok   { color: var(--green-dark); }
+    .sync-status.bad  { color: var(--red-dark); }
+    .sync-status.wait { color: var(--muted); }
+    .wa-btn.disabled { background: #e9e9e9; color: #999; pointer-events: none; }
+    .badge.grey { background: #eee; color: #666; }
+
+    /* ===================== MEMBER PAGE (opened from a private link) ===================== */
+    .reveal-box {
+      text-align: center;
+      padding: 18px 10px;
+      margin: 12px 0;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #fff5f5, #f0faf3);
+      border: 2px dashed var(--red);
+    }
+    .reveal-box .label { color: var(--muted); font-size: 0.95rem; }
+    .reveal-box .receiver { font-size: 1.8rem; font-weight: 800; color: var(--red); margin-top: 6px; overflow-wrap: anywhere; }
+    .wishlist-text {
+      white-space: pre-wrap;           /* keep the member's line breaks */
+      overflow-wrap: anywhere;
+      background: #fffdf6;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      line-height: 1.5;
+    }
+    .empty-note { color: var(--muted); font-style: italic; }
+    .char-count { text-align: right; font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+    .loading { text-align: center; color: var(--muted); padding: 20px 0; }
+
     /* ===================== FOOTER ===================== */
     footer {
       text-align: center;
@@ -534,7 +576,7 @@
 
   <main>
     <!-- Step indicator -->
-    <div class="steps">
+    <div class="steps" id="steps">
       <div id="ind-1">1. Organizer</div>
       <div id="ind-2">2. Members</div>
       <div id="ind-3">3. Send</div>
@@ -597,14 +639,26 @@
     <!-- ===================== STEP 3: SEND ===================== -->
     <section id="step-3" class="hidden">
       <div class="card">
-        <h2>🎁 Send the secrets</h2>
+        <h2>🎁 Send the secret links</h2>
         <div class="summary" id="summary"></div>
+
+        <!-- Online sync: the draw must be saved online (Cloudflare) before links work -->
+        <div class="sync-box">
+          <div>☁️ <b>Online draw:</b> <span class="sync-status" id="sync-status"></span></div>
+          <div class="row" id="admin-key-row">
+            <input type="password" id="admin-key" placeholder="Organizer key" autocomplete="off" aria-label="Organizer key" />
+            <button class="btn-green btn-small" id="btn-publish">☁️ Save draw online</button>
+          </div>
+          <div class="row">
+            <button class="btn-light btn-small" id="btn-status">🔄 Check who opened / added a wish list</button>
+          </div>
+        </div>
 
         <label class="toggle-row">
           <input type="checkbox" id="use-wame" />
           Use wa.me links (better on mobile / WhatsApp app)
         </label>
-        <p class="hint">Make sure you're logged into WhatsApp Web (or the app on mobile). Each button opens a chat with the message ready — just press <b>Send</b> in WhatsApp.</p>
+        <p class="hint">Make sure you're logged into WhatsApp Web (or the app on mobile). Each button opens a chat with that person's <b>private link</b> ready — just press <b>Send</b> in WhatsApp. They open the link to see who they're buying for and to add their wish list.</p>
 
         <p class="progress" id="progress"></p>
         <div id="send-list"></div>
@@ -624,6 +678,54 @@
         <button class="btn-light" id="btn-reveal">🔓 Reveal all pairs (organizer only)</button>
         <button class="btn-red" id="btn-reshuffle">🔁 Reshuffle</button>
         <button class="btn-light" id="btn-reset-3">Start Over</button>
+      </div>
+    </section>
+
+    <!-- ===================== MEMBER PAGE (opened from a private ?t=... link) ===================== -->
+    <section id="member-view" class="hidden">
+      <div class="card" id="member-loading">
+        <div class="loading">🎅 Loading your Secret Santa details…</div>
+      </div>
+
+      <div class="card hidden" id="member-error">
+        <h2>😕 Link not found</h2>
+        <p id="member-error-text"></p>
+      </div>
+
+      <div class="hidden" id="member-content">
+        <div class="card">
+          <h2 id="member-hello"></h2>
+          <div class="reveal-box">
+            <div class="label">You are the Secret Santa for…</div>
+            <div class="receiver hidden" id="member-receiver"></div>
+            <button class="btn-red" id="btn-member-reveal" style="margin-top:10px">🎁 Tap to reveal</button>
+          </div>
+          <div class="summary" id="member-event"></div>
+          <p class="hint">🤫 Keep it a secret – and don't share this link, it's only for you.</p>
+        </div>
+
+        <div class="card">
+          <h2 id="receiver-wishlist-title"></h2>
+          <div id="receiver-wishlist"></div>
+          <div class="actions">
+            <button class="btn-light btn-small" id="btn-member-refresh">🔄 Refresh</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>✍️ Your wish list</h2>
+          <p class="hint" id="my-wishlist-hint">Your Secret Santa will see this. You can only save it <b>once</b>, so check it before saving!</p>
+          <div id="my-wishlist-saved" class="hidden"></div>
+          <div id="my-wishlist-form">
+            <textarea id="my-wishlist" maxlength="1000" rows="5" placeholder="e.g. A good book, chocolates, a coffee mug ☕ – no socks please 😄"></textarea>
+            <div class="char-count" id="my-wishlist-count">0 / 1000</div>
+            <div id="err-wish" class="error hidden"></div>
+            <div class="actions">
+              <span></span>
+              <button class="btn-green" id="btn-save-wish">💾 Save wish list</button>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -669,6 +771,13 @@
     const DEFAULT_COUNTRY_CODE = "94";   // Sri Lanka
     const MIN_PARTICIPANTS = 3;
 
+    // Online storage: Cloudflare Worker URL (see worker/ folder, deployed with wrangler)
+    const API_URL = "https://dialog-secret-santa.dialog-secret-santa.workers.dev/";
+    // Public address of this page – members' private links start with this
+    const SITE_URL = "https://lakshithasri.github.io/secret-santa/";
+    // Organizer key is remembered separately so "Start Over" doesn't wipe it
+    const ADMIN_KEY_STORAGE = "dialogFinanceSecretSanta_adminKey";
+
     /* =====================================================================
        APP STATE (everything that is saved to localStorage)
        ===================================================================== */
@@ -677,9 +786,11 @@
         step: 1,
         organizer: { name: "", budget: "", date: "", note: "", includeMe: false, phone: "" },
         members: [{ name: "", phone: "" }, { name: "", phone: "" }, { name: "", phone: "" }],
-        participants: [],   // [{ name, phone }] – frozen list used for the shuffle
+        participants: [],   // [{ name, phone, token }] – frozen list used for the shuffle
         pairs: [],          // [{ giver: index, receiver: index }] into participants
         sent: [],           // sent[i] === true once giver i's message was opened
+        published: false,   // true once the current draw is saved online
+        progress: {},       // token -> { opened, wished } from the last "Check" click
         useWaMe: isMobile() // default to wa.me on phones
       };
     }
@@ -804,8 +915,7 @@
        A pair is skipped if one of the names isn't in the list.
        --------------------------------------------------------------------- */
     const FIXED_PAIRS = [
-      ["Anjana", "Parami"],
-      ["Ravindu", "Anji"]
+      ["Anjana", "Parami"]
     ];
 
     function findByName(people, wanted) {
@@ -862,19 +972,126 @@
     /* =====================================================================
        WHATSAPP MESSAGE
        ===================================================================== */
-    function buildMessage(giverName, receiverName) {
+    // The message only contains the private link – the receiver's name is on that page
+    function buildMessage(giverName, link) {
       const o = state.organizer;
-      const lines = [
+      return [
         "🎅 Hi " + giverName + "!",
         "Dialog Finance Secret Santa is here 🎁",
-        "You are the Secret Santa for: *" + receiverName + "*"
-      ];
-      if (o.budget.trim()) lines.push("Budget: " + o.budget.trim());
-      if (o.date)          lines.push("Exchange date: " + formatDate(o.date));
-      if (o.note.trim())   lines.push(o.note.trim());
-      lines.push("Keep it a secret! 🤫");
-      lines.push("– " + o.name.trim());
-      return lines.join("\n");
+        "Open your private link to see who you're the Secret Santa for and to add your wish list:",
+        link,
+        "Keep it a secret – don't share this link! 🤫",
+        "– " + o.name.trim()
+      ].join("\n");
+    }
+
+    function memberLink(token) {
+      return SITE_URL + "?t=" + encodeURIComponent(token);
+    }
+
+    // Random, unguessable token for each person's private link (24 chars)
+    function makeToken() {
+      const bytes = new Uint8Array(18);
+      crypto.getRandomValues(bytes);
+      return btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+
+    /* =====================================================================
+       GOOGLE SHEET CONNECTION
+       Sends { action, ... } as plain text (avoids browser CORS pre-checks).
+       ===================================================================== */
+    async function api(action, data) {
+      if (!API_URL) throw new Error("Online storage isn't connected yet (API_URL is empty).");
+      let res;
+      try {
+        res = await fetch(API_URL, {
+          method: "POST",
+          body: JSON.stringify(Object.assign({ action }, data))
+        });
+      } catch (e) {
+        throw new Error("Couldn't reach the server. Check your internet connection and try again.");
+      }
+      if (!res.ok) throw new Error("Server error (" + res.status + "). Try again.");
+      return res.json();
+    }
+
+    function getAdminKey() {
+      try { return localStorage.getItem(ADMIN_KEY_STORAGE) || ""; } catch (e) { return ""; }
+    }
+    function setAdminKey(key) {
+      try { localStorage.setItem(ADMIN_KEY_STORAGE, key); } catch (e) { /* ignore */ }
+    }
+
+    // Save the current draw online (replaces any previous draw)
+    async function publishDraw() {
+      const key = $("admin-key").value.trim() || getAdminKey();
+      if (!key) {
+        setSync("bad", "Enter the organizer key, then click “Save draw online”.");
+        $("admin-key").focus();
+        return;
+      }
+      setSync("wait", "Saving the draw online…");
+      $("btn-publish").disabled = true;
+      try {
+        const o = state.organizer;
+        const res = await api("setup", {
+          adminKey: key,
+          event: { organizer: o.name.trim(), budget: o.budget.trim(), date: o.date, note: o.note.trim() },
+          members: state.pairs.map((p) => ({
+            token: state.participants[p.giver].token,
+            name: state.participants[p.giver].name,
+            receiverToken: state.participants[p.receiver].token
+          }))
+        });
+        if (!res.ok) throw new Error(res.error || "Saving failed.");
+        setAdminKey(key);
+        state.published = true;
+        state.progress = {};
+        saveState();
+        renderStep3();
+      } catch (e) {
+        setSync("bad", e.message);
+        // Wrong key: forget it and show the key box again
+        if (/organizer key/i.test(e.message)) {
+          setAdminKey("");
+          $("admin-key").classList.remove("hidden");
+          $("btn-publish").textContent = "☁️ Save draw online";
+        }
+      } finally {
+        $("btn-publish").disabled = false;
+      }
+    }
+
+    // Ask the server who opened their link and who saved a wish list
+    async function checkProgress() {
+      const key = getAdminKey();
+      if (!key || !state.published) { setSync("bad", "Save the draw online first."); return; }
+      $("btn-status").disabled = true;
+      try {
+        const res = await api("status", { adminKey: key });
+        if (!res.ok) throw new Error(res.error || "Couldn't check progress.");
+        state.progress = {};
+        res.members.forEach((m) => { state.progress[m.token] = { opened: m.opened, wished: m.wished }; });
+        saveState();
+        renderStep3();
+      } catch (e) {
+        setSync("bad", e.message);
+      } finally {
+        $("btn-status").disabled = false;
+      }
+    }
+
+    function setSync(kind, text) {
+      const el = $("sync-status");
+      el.className = "sync-status " + kind;
+      el.textContent = text;
+    }
+
+    // Give every participant a fresh private token (old links stop working)
+    function assignTokens() {
+      state.participants.forEach((p) => { p.token = makeToken(); });
+      state.published = false;
+      state.progress = {};
     }
 
     function whatsappUrl(phone, message) {
@@ -949,12 +1166,24 @@
       $("progress").textContent = "Sent: " + sentCount + " / " + state.participants.length +
         (sentCount === state.participants.length ? "  🎉 All done!" : "");
 
+      // Online status
+      const hasKey = !!getAdminKey();
+      $("admin-key").value = "";
+      $("admin-key").classList.toggle("hidden", hasKey);
+      $("btn-publish").textContent = hasKey ? "☁️ Save draw online again" : "☁️ Save draw online";
+      $("btn-publish").classList.toggle("hidden", state.published);
+      $("btn-status").classList.toggle("hidden", !state.published);
+      if (!API_URL) setSync("bad", "Not connected – the online storage link (API_URL) isn't set in index.html yet.");
+      else if (state.published) setSync("ok", "Saved ✓ – private links are ready to send.");
+      else setSync("wait", "Not saved yet – save the draw online before sending links.");
+
       // One row per giver – receivers are NOT shown (keeps the secret)
       $("send-list").innerHTML = state.pairs.map((p) => {
         const giver = state.participants[p.giver];
-        const receiver = state.participants[p.receiver];
-        const url = whatsappUrl(giver.phone, buildMessage(giver.name, receiver.name));
+        const link = memberLink(giver.token);
+        const url = whatsappUrl(giver.phone, buildMessage(giver.name, link));
         const sent = !!state.sent[p.giver];
+        const prog = state.progress[giver.token] || {};
         return `
           <div class="person">
             <div class="who">
@@ -963,7 +1192,10 @@
             </div>
             <div class="right">
               ${sent ? '<span class="badge">Sent ✓</span>' : ""}
-              <a class="btn btn-small wa-btn ${sent ? "sent" : ""}" href="${esc(url)}"
+              ${prog.opened ? '<span class="badge">Opened 👀</span>' : ""}
+              ${prog.wished ? '<span class="badge">Wish list ✓</span>' : ""}
+              <button class="btn-light btn-small" data-copy="${esc(link)}" ${state.published ? "" : "disabled"} title="Copy private link">📋</button>
+              <a class="btn btn-small wa-btn ${sent ? "sent" : ""} ${state.published ? "" : "disabled"}" href="${esc(url)}"
                  target="_blank" rel="noopener noreferrer" data-sent="${p.giver}">
                  💬 ${sent ? "Send again" : "Send on WhatsApp"}
               </a>
@@ -1115,6 +1347,7 @@
 
       state.participants = participants;
       state.pairs = makePairs(participants);
+      assignTokens();
       state.sent = participants.map(() => false);
       state.celebrated = false;
       state.step = 3;
@@ -1122,6 +1355,7 @@
       saveState();
       render();
       giftBurst();   // 🎉
+      if (API_URL && getAdminKey()) publishDraw();   // save online straight away
     });
 
     /* =====================================================================
@@ -1129,6 +1363,18 @@
        ===================================================================== */
     // Clicking "Send on WhatsApp" – link opens in a new tab, we mark it sent
     $("send-list").addEventListener("click", (e) => {
+      // 📋 Copy a private link (e.g. to send another way, or to test it)
+      const copyBtn = e.target.closest("[data-copy]");
+      if (copyBtn) {
+        const text = copyBtn.dataset.copy;
+        const done = () => { copyBtn.textContent = "✓"; setTimeout(() => { copyBtn.textContent = "📋"; }, 1500); };
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(text).then(done, () => prompt("Copy this link:", text));
+        } else {
+          prompt("Copy this link:", text);
+        }
+        return;
+      }
       const link = e.target.closest("[data-sent]");
       if (!link) return;
       state.sent[Number(link.dataset.sent)] = true;
@@ -1145,20 +1391,23 @@
 
     $("btn-reshuffle").addEventListener("click", () => {
       const sentCount = state.sent.filter(Boolean).length;
-      let msg = "Reshuffle everyone? This creates brand new pairs.";
-      if (sentCount > 0) {
-        msg = "⚠️ " + sentCount + " message(s) were already sent!\n\n" +
-              "If you reshuffle, those people will have the WRONG assignment " +
-              "and you must message EVERYONE again.\n\nReshuffle anyway?";
+      let msg = "Reshuffle everyone? This creates brand new pairs and new private links.";
+      if (sentCount > 0 || state.published) {
+        msg = "⚠️ Reshuffle?\n\n" +
+              (sentCount > 0 ? sentCount + " link(s) were already sent – they will STOP working.\n" : "") +
+              "Any wish lists already saved will be DELETED, and you must send EVERYONE a new link." +
+              "\n\nReshuffle anyway?";
       }
       if (!confirm(msg)) return;
       state.pairs = makePairs(state.participants);
+      assignTokens();
       state.sent = state.participants.map(() => false);
       state.celebrated = false;
       $("reveal-card").classList.add("hidden");
       saveState();
       renderStep3();
       giftBurst();   // 🎉
+      if (API_URL && getAdminKey()) publishDraw();
     });
 
     $("btn-reveal").addEventListener("click", () => {
@@ -1176,15 +1425,131 @@
     $("btn-back-3").addEventListener("click", () => {
       const sentCount = state.sent.filter(Boolean).length;
       let msg = "Go back to edit members? This will clear the current shuffle.";
-      if (sentCount > 0) msg = "⚠️ " + sentCount + " message(s) were already sent.\n\n" + msg;
+      if (sentCount > 0 || state.published) {
+        msg = "⚠️ " + (sentCount > 0 ? sentCount + " link(s) were already sent. " : "") +
+              "When you shuffle again, old links stop working and saved wish lists are deleted.\n\n" + msg;
+      }
       if (!confirm(msg)) return;
       state.participants = [];
       state.pairs = [];
       state.sent = [];
+      state.published = false;
+      state.progress = {};
       state.step = 2;
       $("reveal-card").classList.add("hidden");
       saveState();
       render();
+    });
+
+    $("btn-publish").addEventListener("click", publishDraw);
+    $("btn-status").addEventListener("click", checkProgress);
+
+    /* =====================================================================
+       MEMBER PAGE – what a member sees when they open their private link
+       ===================================================================== */
+    const memberToken = new URLSearchParams(location.search).get("t");
+
+    async function loadMemberPage() {
+      try {
+        const res = await api("get", { token: memberToken });
+        if (!res.ok) {
+          showMemberError(res.error === "not_found"
+            ? "This link doesn't work any more. The draw may have been reshuffled – ask the organizer for your new link."
+            : res.error);
+          return;
+        }
+        renderMemberPage(res);
+      } catch (e) {
+        showMemberError(e.message);
+      }
+    }
+
+    function showMemberError(text) {
+      $("member-loading").classList.add("hidden");
+      $("member-content").classList.add("hidden");
+      $("member-error").classList.remove("hidden");
+      $("member-error-text").textContent = text;
+    }
+
+    function renderMemberPage(d) {
+      $("member-loading").classList.add("hidden");
+      $("member-error").classList.add("hidden");
+      $("member-content").classList.remove("hidden");
+
+      $("member-hello").textContent = "🎅 Hi " + d.name + "!";
+      $("member-receiver").textContent = d.receiverName;
+
+      // Event details
+      const ev = d.event || {};
+      let html = "";
+      if (ev.budget) html += "<b>Budget:</b> " + esc(ev.budget) + "<br>";
+      if (ev.date)   html += "<b>Exchange date:</b> " + esc(formatDate(ev.date)) + "<br>";
+      if (ev.note)   html += esc(ev.note) + "<br>";
+      if (ev.organizer) html += "<b>Organizer:</b> " + esc(ev.organizer);
+      $("member-event").innerHTML = html;
+
+      // Receiver's wish list
+      $("receiver-wishlist-title").textContent = "📝 " + d.receiverName + "'s wish list";
+      $("receiver-wishlist").innerHTML = d.receiverWishlist
+        ? '<div class="wishlist-text">' + esc(d.receiverWishlist) + "</div>"
+        : '<p class="empty-note">' + esc(d.receiverName) + " hasn't added a wish list yet. Check back later!</p>";
+
+      renderMyWishlist(d.locked, d.myWishlist);
+    }
+
+    function renderMyWishlist(locked, text) {
+      $("my-wishlist-form").classList.toggle("hidden", locked);
+      $("my-wishlist-saved").classList.toggle("hidden", !locked);
+      $("my-wishlist-hint").innerHTML = locked
+        ? "Saved ✓ – your Secret Santa can see this. It can't be changed now."
+        : "Your Secret Santa will see this. You can only save it <b>once</b>, so check it before saving!";
+      if (locked) $("my-wishlist-saved").innerHTML = '<div class="wishlist-text">' + esc(text) + "</div>";
+    }
+
+    $("btn-member-reveal").addEventListener("click", () => {
+      $("member-receiver").classList.remove("hidden");
+      $("btn-member-reveal").classList.add("hidden");
+      giftBurst();   // 🎉
+    });
+
+    $("btn-member-refresh").addEventListener("click", async () => {
+      $("btn-member-refresh").disabled = true;
+      const revealed = !$("member-receiver").classList.contains("hidden");
+      await loadMemberPage();
+      if (revealed) {   // keep the name showing after refresh
+        $("member-receiver").classList.remove("hidden");
+        $("btn-member-reveal").classList.add("hidden");
+      }
+      $("btn-member-refresh").disabled = false;
+    });
+
+    $("my-wishlist").addEventListener("input", (e) => {
+      $("my-wishlist-count").textContent = e.target.value.length + " / 1000";
+    });
+
+    $("btn-save-wish").addEventListener("click", async () => {
+      const text = $("my-wishlist").value.trim();
+      if (!text) { showError("err-wish", ["Please write something in your wish list first."]); return; }
+      if (!confirm("Save your wish list?\n\nYou can't change it after saving.")) return;
+      showError("err-wish", []);
+      $("btn-save-wish").disabled = true;
+      try {
+        const res = await api("saveWishlist", { token: memberToken, wishlist: text });
+        if (res.ok) {
+          renderMyWishlist(true, res.myWishlist);
+          giftBurst();   // 🎉
+        } else if (res.error === "locked") {
+          renderMyWishlist(true, res.myWishlist);
+        } else {
+          showError("err-wish", [res.error === "not_found"
+            ? "This link doesn't work any more – ask the organizer for your new link."
+            : res.error]);
+        }
+      } catch (e) {
+        showError("err-wish", [e.message]);
+      } finally {
+        $("btn-save-wish").disabled = false;
+      }
     });
 
     /* =====================================================================
@@ -1315,9 +1680,20 @@
        ===================================================================== */
     startSnow();
     addLights();
-    // Safety: if saved data says step 3 but the shuffle is missing, go back to step 2
-    if (state.step === 3 && (!state.pairs.length || !state.participants.length)) state.step = 2;
-    render();
+
+    if (memberToken) {
+      // Member opened their private link: show only their page, never the organizer screens
+      $("steps").classList.add("hidden");
+      [1, 2, 3].forEach((n) => $("step-" + n).classList.add("hidden"));
+      $("member-view").classList.remove("hidden");
+      loadMemberPage();
+    } else {
+      // Safety: if saved data says step 3 but the shuffle is missing, go back to step 2
+      if (state.step === 3 && (!state.pairs.length || !state.participants.length)) state.step = 2;
+      // Draws saved by the older version have no private links yet – create them
+      if (state.step === 3 && state.participants.some((p) => !p.token)) { assignTokens(); saveState(); }
+      render();
+    }
   </script>
 </body>
 </html>
