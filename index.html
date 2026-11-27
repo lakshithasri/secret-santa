@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dialog Finance – Secret Santa</title>
+  <link rel="icon" href="images/logo.jpg" />
+
+  <style>
+    /* ===================== THEME COLOURS (edit here) ===================== */
+    :root {
+      --red: #c62828;
+      --red-dark: #9e1f1f;
+      --green: #1b7a3e;
+      --green-dark: #135c2e;
+      --white: #ffffff;
+      --bg: #f6f1ec;
+      --text: #222222;
+      --muted: #6b6b6b;
+      --border: #e3d9cf;
+      --error-bg: #fdecea;
+      --ok-bg: #e7f5ec;
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      /* Subtle snowflake pattern made with emoji in an SVG (no external images) */
+      background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><text x='10' y='30' font-size='16' opacity='0.12'>❄</text><text x='70' y='90' font-size='12' opacity='0.10'>❄</text></svg>");
+    }
+
+    /* ===================== HEADER ===================== */
+    header {
+      background: linear-gradient(135deg, var(--red), var(--red-dark));
+      color: var(--white);
+      text-align: center;
+      padding: 22px 16px 18px;
+      border-bottom: 6px solid var(--green);
+    }
+    header h1 { margin: 0; font-size: 1.5rem; line-height: 1.3; }
+    header p  { margin: 6px 0 0; opacity: 0.9; font-size: 0.95rem; }
+
+    .header-inner {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+    .header-text { flex: 1; min-width: 0; }
+
+    /* Company logo */
+    .logo {
+      width: 64px;
+      height: 64px;
+      border-radius: 14px;
+      object-fit: cover;
+      background: var(--white);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+      margin-bottom: 8px;
+    }
+
+    /* ===================== DANCING SANTA ===================== */
+    .santa-stage {
+      flex-shrink: 0;
+      width: 170px;
+      height: 200px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .santa {
+      width: 160px;
+      height: 190px;
+      object-fit: cover;
+      object-position: 50% 28%;      /* focus on Santa, crop the empty background */
+      border-radius: 50% 50% 18px 18px;
+      border: 4px solid var(--white);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+      transform-origin: 50% 100%;    /* sway from the feet */
+      animation: santa-dance 1.2s ease-in-out infinite;
+    }
+    /* Sway left/right + little hops = dancing */
+    @keyframes santa-dance {
+      0%   { transform: translateY(0)     rotate(0deg)  scale(1); }
+      15%  { transform: translateY(-12px) rotate(-8deg) scale(1.03); }
+      30%  { transform: translateY(0)     rotate(-4deg) scale(1); }
+      50%  { transform: translateY(-6px)  rotate(0deg)  scale(1.05, 0.97); }
+      65%  { transform: translateY(-12px) rotate(8deg)  scale(1.03); }
+      80%  { transform: translateY(0)     rotate(4deg)  scale(1); }
+      100% { transform: translateY(0)     rotate(0deg)  scale(1); }
+    }
+    /* Respect users who turn off animations */
+    @media (prefers-reduced-motion: reduce) {
+      .santa { animation: none; }
+    }
+
+    /* ===================== SNOWFALL ===================== */
+    /* Flakes are created by JavaScript (see "FESTIVE ANIMATIONS" in the script) */
+    .snow {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;   /* clicks pass straight through the snow */
+      overflow: hidden;
+      z-index: 50;
+    }
+    .flake {
+      position: absolute;
+      top: -30px;
+      color: #ffffff;
+      text-shadow: 0 0 4px rgba(120, 160, 200, 0.9);  /* visible on the light background too */
+      user-select: none;
+      animation-name: snow-fall, snow-sway;
+      animation-timing-function: linear, ease-in-out;
+      animation-iteration-count: infinite, infinite;
+      animation-direction: normal, alternate;
+    }
+    @keyframes snow-fall {
+      to { top: 105vh; }
+    }
+    @keyframes snow-sway {
+      from { transform: translateX(-25px) rotate(0deg); }
+      to   { transform: translateX(25px)  rotate(180deg); }
+    }
+
+    /* ===================== TWINKLING LIGHTS (under the header) ===================== */
+    .lights {
+      display: flex;
+      justify-content: space-around;
+      overflow: hidden;
+      height: 22px;
+      margin-top: -3px;
+      padding: 0 6px;
+      /* the wire */
+      background: linear-gradient(var(--green-dark), var(--green-dark)) 0 3px / 100% 2px no-repeat;
+    }
+    .bulb {
+      width: 10px;
+      height: 15px;
+      margin-top: 4px;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      animation: twinkle 1.6s ease-in-out infinite;
+    }
+    .bulb:nth-child(4n+1) { background: #ff3b3b; color: #ff3b3b; }
+    .bulb:nth-child(4n+2) { background: #ffd23f; color: #ffd23f; animation-delay: 0.4s; }
+    .bulb:nth-child(4n+3) { background: #2ecc71; color: #2ecc71; animation-delay: 0.8s; }
+    .bulb:nth-child(4n+4) { background: #3fa9ff; color: #3fa9ff; animation-delay: 1.2s; }
+    @keyframes twinkle {
+      0%, 100% { opacity: 1;   box-shadow: 0 2px 10px 2px currentColor; }
+      50%      { opacity: 0.3; box-shadow: none; }
+    }
+
+    /* ===================== GIFT BURST (after shuffle / all sent) ===================== */
+    .burst {
+      position: fixed;
+      top: -40px;
+      pointer-events: none;
+      z-index: 60;
+      animation: burst-fall linear forwards;
+    }
+    @keyframes burst-fall {
+      to { transform: translateY(110vh) rotate(540deg); }
+    }
+
+    /* ===================== SMALL TOUCHES ===================== */
+    /* Cards slide in when a step opens */
+    section:not(.hidden) .card { animation: card-in 0.45s ease-out both; }
+    @keyframes card-in {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: none; }
+    }
+    /* Dice wiggles on the Shuffle button */
+    #btn-shuffle:hover, #btn-shuffle:focus-visible { animation: wiggle 0.5s ease-in-out infinite; }
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25%      { transform: rotate(-4deg); }
+      75%      { transform: rotate(4deg); }
+    }
+    /* "Sent ✓" badge pops in */
+    .badge { animation: pop 0.35s ease-out; }
+    @keyframes pop {
+      0%   { transform: scale(0); }
+      70%  { transform: scale(1.25); }
+      100% { transform: scale(1); }
+    }
+    /* Logo glows gently */
+    .logo { animation: glow 2.5s ease-in-out infinite; }
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25); }
+      50%      { box-shadow: 0 0 18px 4px rgba(255, 255, 255, 0.7); }
+    }
+
+    /* Turn all of the above off for users who prefer less motion */
+    @media (prefers-reduced-motion: reduce) {
+      .snow, .burst { display: none; }
+      .bulb, .logo, .badge, #btn-shuffle, section .card { animation: none !important; }
+    }
+
+    main {
+      flex: 1;
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 20px 16px 32px;
+    }
+
+    /* ===================== STEP INDICATOR ===================== */
+    .steps {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+    .steps div {
+      flex: 1;
+      text-align: center;
+      padding: 8px 4px;
+      border-radius: 999px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+    .steps div.active { background: var(--green); color: var(--white); border-color: var(--green); font-weight: 600; }
+    .steps div.done   { background: var(--ok-bg); color: var(--green-dark); }
+
+    /* ===================== CARDS & FORMS ===================== */
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card h2 { margin: 0 0 14px; font-size: 1.2rem; color: var(--red); }
+
+    label { display: block; font-weight: 600; font-size: 0.9rem; margin: 12px 0 4px; }
+    label .opt { font-weight: 400; color: var(--muted); }
+
+    input[type="text"], input[type="tel"], input[type="date"], textarea {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 1rem;           /* 16px+ prevents iOS zoom on focus */
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fffdfb;
+      font-family: inherit;
+    }
+    input:focus, textarea:focus { outline: 2px solid var(--green); border-color: var(--green); }
+    textarea { resize: vertical; min-height: 70px; }
+
+    .checkbox-row { display: flex; align-items: center; gap: 10px; margin: 16px 0 4px; font-weight: 600; }
+    .checkbox-row input { width: 20px; height: 20px; accent-color: var(--green); }
+
+    .hint { font-size: 0.82rem; color: var(--muted); margin-top: 4px; }
+
+    /* ===================== BUTTONS ===================== */
+    button, .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 11px 18px;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      text-decoration: none;
+      font-family: inherit;
+      transition: transform 0.05s, background 0.15s;
+    }
+    button:active, .btn:active { transform: scale(0.97); }
+    .btn-red    { background: var(--red);   color: var(--white); }
+    .btn-red:hover    { background: var(--red-dark); }
+    .btn-green  { background: var(--green); color: var(--white); }
+    .btn-green:hover  { background: var(--green-dark); }
+    .btn-light  { background: var(--white); color: var(--text); border: 1px solid var(--border); }
+    .btn-light:hover  { background: #f3eee9; }
+    .btn-small  { padding: 7px 12px; font-size: 0.9rem; }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; margin-top: 18px; }
+
+    /* ===================== MEMBER ROWS (step 2) ===================== */
+    .member-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+      margin-bottom: 8px;
+      align-items: center;
+    }
+    .del-btn {
+      background: var(--error-bg);
+      color: var(--red);
+      width: 42px; height: 42px;
+      padding: 0;
+      border-radius: 10px;
+    }
+    .del-btn:hover { background: #f8d4d0; }
+    .count { font-size: 0.9rem; color: var(--muted); margin-top: 10px; }
+
+    /* ===================== MESSAGES ===================== */
+    .error {
+      background: var(--error-bg);
+      color: var(--red-dark);
+      border-radius: 10px;
+      padding: 10px 14px;
+      margin-top: 14px;
+      font-size: 0.92rem;
+    }
+    .error ul { margin: 4px 0 0; padding-left: 20px; }
+    .hidden { display: none !important; }
+
+    /* ===================== SEND LIST (step 3) ===================== */
+    .summary { font-size: 0.92rem; color: var(--muted); line-height: 1.6; }
+    .progress { font-weight: 600; color: var(--green-dark); }
+
+    .person {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 0;
+      border-bottom: 1px dashed var(--border);
+    }
+    .person:last-child { border-bottom: none; }
+    .person .who { min-width: 0; }
+    .person .name { font-weight: 600; overflow-wrap: anywhere; }
+    .person .phone { font-size: 0.85rem; color: var(--muted); }
+    .person .right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .badge {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--green-dark);
+      background: var(--ok-bg);
+      padding: 4px 8px;
+      border-radius: 999px;
+    }
+    .wa-btn { background: #25d366; color: #0b3d20; }
+    .wa-btn:hover { background: #1fb956; }
+    .wa-btn.sent { background: #e9e9e9; color: #555; }
+
+    .toggle-row { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; margin: 6px 0 4px; }
+    .toggle-row input { width: 18px; height: 18px; accent-color: var(--green); }
+
+    .pairs-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+    .pairs-table td { padding: 8px 4px; border-bottom: 1px solid var(--border); overflow-wrap: anywhere; }
+    .pairs-table td.arrow { text-align: center; width: 40px; }
+
+    /* ===================== FOOTER ===================== */
+    footer {
+      text-align: center;
+      padding: 16px;
+      font-size: 0.88rem;
+      color: var(--white);
+      background: var(--green);
+      border-top: 4px solid var(--red);
+    }
+
+    /* ===================== MOBILE ===================== */
+    @media (max-width: 520px) {
+      header h1 { font-size: 1.25rem; }
+      .header-inner { flex-direction: column-reverse; gap: 10px; }
+      .santa-stage { width: 150px; height: 180px; }
+      .santa { width: 140px; height: 170px; }
+      .card { padding: 16px; }
+      .member-row { grid-template-columns: 1fr auto; }
+      .member-row .m-name  { grid-column: 1 / 2; }
+      .member-row .m-phone { grid-column: 1 / 2; }
+      .member-row .del-btn { grid-column: 2 / 3; grid-row: 1 / 3; height: 100%; }
+      .member-row { padding-bottom: 10px; border-bottom: 1px dashed var(--border); }
+      .person { flex-direction: column; align-items: stretch; }
+      .person .right { justify-content: space-between; }
+      .actions button { flex: 1 1 auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-inner">
+      <div class="header-text">
+        <img src="images/logo.jpg" alt="Dialog Finance logo" class="logo" />
+        <h1>Dialog Finance – Secret Santa 🎅</h1>
+        <p>🎁 Shuffle names &amp; send secrets on WhatsApp ❄️</p>
+      </div>
+      <!-- Dancing Santa (image: images/anjana.jpg) -->
+      <div class="santa-stage" aria-hidden="true">
+        <img src="images/anjana.jpg" alt="" class="santa" />
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- Step indicator -->
+    <div class="steps">
+      <div id="ind-1">1. Organizer</div>
+      <div id="ind-2">2. Members</div>
+      <div id="ind-3">3. Send</div>
+    </div>
+
+    <!-- ===================== STEP 1: ORGANIZER ===================== -->
+    <section id="step-1" class="hidden">
+      <div class="card">
+        <h2>🎄 Organizer details</h2>
+
+        <label for="org-name">Organizer name *</label>
+        <input type="text" id="org-name" placeholder="e.g. Ravindu" autocomplete="name" />
+
+        <label for="org-budget">Gift budget <span class="opt">(optional)</span></label>
+        <input type="text" id="org-budget" placeholder="e.g. LKR 2,000" />
+
+        <label for="org-date">Exchange date <span class="opt">(optional)</span></label>
+        <input type="date" id="org-date" />
+
+        <label for="org-note">Short note <span class="opt">(optional)</span></label>
+        <textarea id="org-note" maxlength="300" placeholder="e.g. Gifts will be exchanged at the year-end party 🎉"></textarea>
+
+        <div id="err-1" class="error hidden"></div>
+
+        <div class="actions">
+          <button class="btn-light" id="btn-reset-1">Start Over</button>
+          <button class="btn-green" id="btn-next-1">Next →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== STEP 2: MEMBERS ===================== -->
+    <section id="step-2" class="hidden">
+      <div class="card">
+        <h2>👥 Team members</h2>
+        <p class="hint">Phone formats like 0771234567, 771234567, +94 77 123 4567 or 94771234567 are all fine.</p>
+
+        <div id="member-list"></div>
+        <button class="btn-light btn-small" id="btn-add">➕ Add member</button>
+
+        <div class="checkbox-row">
+          <input type="checkbox" id="include-me" />
+          <label for="include-me" style="margin:0">Include me (organizer) in the draw</label>
+        </div>
+        <div id="org-phone-wrap" class="hidden">
+          <label for="org-phone">Organizer's WhatsApp number *</label>
+          <input type="tel" id="org-phone" placeholder="e.g. 0771234567" />
+        </div>
+
+        <div class="count" id="participant-count"></div>
+        <div id="err-2" class="error hidden"></div>
+
+        <div class="actions">
+          <button class="btn-light" id="btn-back-2">← Back</button>
+          <button class="btn-red" id="btn-shuffle">Shuffle 🎲</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== STEP 3: SEND ===================== -->
+    <section id="step-3" class="hidden">
+      <div class="card">
+        <h2>🎁 Send the secrets</h2>
+        <div class="summary" id="summary"></div>
+
+        <label class="toggle-row">
+          <input type="checkbox" id="use-wame" />
+          Use wa.me links (better on mobile / WhatsApp app)
+        </label>
+        <p class="hint">Make sure you're logged into WhatsApp Web (or the app on mobile). Each button opens a chat with the message ready — just press <b>Send</b> in WhatsApp.</p>
+
+        <p class="progress" id="progress"></p>
+        <div id="send-list"></div>
+      </div>
+
+      <!-- Reveal area (hidden until confirmed) -->
+      <div class="card hidden" id="reveal-card">
+        <h2>🔓 All pairs (organizer only)</h2>
+        <table class="pairs-table" id="pairs-table"></table>
+        <div class="actions">
+          <button class="btn-light btn-small" id="btn-hide-pairs">🙈 Hide pairs</button>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-light" id="btn-back-3">← Back to members</button>
+        <button class="btn-light" id="btn-reveal">🔓 Reveal all pairs (organizer only)</button>
+        <button class="btn-red" id="btn-reshuffle">🔁 Reshuffle</button>
+        <button class="btn-light" id="btn-reset-3">Start Over</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>Created by Ravindu Dharmasiri</footer>
+
+  <!-- Falling snow (filled by JavaScript) -->
+  <div class="snow" id="snow" aria-hidden="true"></div>
+
+  <script>
+    /* =====================================================================
+       SETTINGS – easy to edit
+       ===================================================================== */
+    const STORAGE_KEY = "dialogFinanceSecretSanta_v1";
+    const DEFAULT_COUNTRY_CODE = "94";   // Sri Lanka
+    const MIN_PARTICIPANTS = 3;
+
+    /* =====================================================================
+       APP STATE (everything that is saved to localStorage)
+       ===================================================================== */
+    function freshState() {
+      return {
+        step: 1,
+        organizer: { name: "", budget: "", date: "", note: "", includeMe: false, phone: "" },
+        members: [{ name: "", phone: "" }, { name: "", phone: "" }, { name: "", phone: "" }],
+        participants: [],   // [{ name, phone }] – frozen list used for the shuffle
+        pairs: [],          // [{ giver: index, receiver: index }] into participants
+        sent: [],           // sent[i] === true once giver i's message was opened
+        useWaMe: isMobile() // default to wa.me on phones
+      };
+    }
+
+    let state = loadState();
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return Object.assign(freshState(), JSON.parse(raw));
+      } catch (e) { /* storage blocked or corrupt – start fresh */ }
+      return freshState();
+    }
+
+    function saveState() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) { /* ignore */ }
+    }
+
+    function isMobile() {
+      return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    }
+
+    /* =====================================================================
+       HELPERS
+       ===================================================================== */
+    const $ = (id) => document.getElementById(id);
+
+    // Escape text before putting it into innerHTML (prevents broken HTML / injection)
+    function esc(str) {
+      return String(str).replace(/[&<>"']/g, (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    /**
+     * Normalize a phone number to international format without "+".
+     *   0771234567       -> 94771234567
+     *   771234567        -> 94771234567
+     *   +94 77 123 4567  -> 94771234567
+     *   94771234567      -> 94771234567
+     *   0094771234567    -> 94771234567
+     *   +44 7911 123456  -> 447911123456 (other countries work with a "+")
+     */
+    function normalizePhone(input) {
+      let s = String(input || "").trim();
+      const hadPlus = s.startsWith("+");
+      let digits = s.replace(/\D/g, "");          // keep digits only
+      if (!digits) return "";
+
+      if (hadPlus) return digits;                  // already international
+      if (digits.startsWith("00")) return digits.slice(2);                   // 00 international prefix
+      if (digits.length === 10 && digits.startsWith("0")) return DEFAULT_COUNTRY_CODE + digits.slice(1); // local 07x...
+      if (digits.length === 9) return DEFAULT_COUNTRY_CODE + digits;         // 77xxxxxxx
+      return digits;                               // e.g. 94771234567
+    }
+
+    // Valid length: Sri Lankan numbers must be 94 + 9 digits; others 10–15 digits (E.164)
+    function isValidPhone(normalized) {
+      if (!/^\d+$/.test(normalized)) return false;
+      if (normalized.startsWith(DEFAULT_COUNTRY_CODE)) {
+        // 94 + 9 digits, and the local part can't start with 0 (catches typos like 077123456)
+        return normalized.length === 11 && normalized[2] !== "0";
+      }
+      return normalized.length >= 10 && normalized.length <= 15;
+    }
+
+    // Pretty-print for display: 94771234567 -> +94 77 123 4567
+    function displayPhone(n) {
+      if (n.length === 11 && n.startsWith("94")) {
+        return "+94 " + n.slice(2, 4) + " " + n.slice(4, 7) + " " + n.slice(7);
+      }
+      return "+" + n;
+    }
+
+    // "2026-12-20" -> "20 Dec 2026" (built in local time to avoid timezone shifts)
+    function formatDate(iso) {
+      if (!iso) return "";
+      const [y, m, d] = iso.split("-").map(Number);
+      if (!y || !m || !d) return iso;
+      return new Date(y, m - 1, d).toLocaleDateString("en-GB", {
+        weekday: "short", day: "numeric", month: "short", year: "numeric"
+      });
+    }
+
+    function showError(boxId, messages) {
+      const box = $(boxId);
+      if (!messages.length) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+      box.innerHTML = "<b>Please fix the following:</b><ul>" +
+        messages.map((m) => "<li>" + esc(m) + "</li>").join("") + "</ul>";
+      box.classList.remove("hidden");
+    }
+
+    /* =====================================================================
+       SHUFFLE – random derangement
+       Fisher–Yates shuffle the order, then each person gives to the NEXT
+       person in that shuffled circle. With 2+ people nobody can get
+       themselves, and everyone gives once and receives once.
+       ===================================================================== */
+    function fisherYates(arr) {
+      const a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = randomInt(i + 1);
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    // Cryptographically strong random int in [0, max) when available
+    function randomInt(max) {
+      if (window.crypto && crypto.getRandomValues) {
+        const buf = new Uint32Array(1);
+        const limit = Math.floor(0x100000000 / max) * max; // avoid modulo bias
+        do { crypto.getRandomValues(buf); } while (buf[0] >= limit);
+        return buf[0] % max;
+      }
+      return Math.floor(Math.random() * max);
+    }
+
+    /* ---------------------------------------------------------------------
+       FIXED PAIRS – each pair of people always draw EACH OTHER (both ways).
+       Matching ignores capital letters and also matches the first name
+       (e.g. "Anjana Perera" matches "Anjana"). Use [] to turn it off.
+       A pair is skipped if one of the names isn't in the list.
+       --------------------------------------------------------------------- */
+    const FIXED_PAIRS = [
+      ["Anjana", "Parami"],
+      ["Ravindu", "Anji"]
+    ];
+
+    function findByName(people, wanted) {
+      const w = wanted.toLowerCase();
+      return people.findIndex((p) => {
+        const n = p.name.trim().toLowerCase();
+        return n === w || n.split(/\s+/)[0] === w;
+      });
+    }
+
+    // Each person in `order` gives to the next one, last gives to the first
+    function circlePairs(order) {
+      const pairs = [];
+      for (let k = 0; k < order.length; k++) {
+        pairs.push({ giver: order[k], receiver: order[(k + 1) % order.length] });
+      }
+      return pairs;
+    }
+
+    function makePairs(people) {
+      const used = new Set();
+      const swaps = [];   // [[a, b], ...] people who draw each other
+
+      // Find each fixed pair in the participant list
+      FIXED_PAIRS.forEach(([nameA, nameB]) => {
+        const a = findByName(people, nameA);
+        const b = findByName(people, nameB);
+        if (a === -1 || b === -1 || a === b || used.has(a) || used.has(b)) return;
+        swaps.push([a, b]);
+        used.add(a);
+        used.add(b);
+      });
+
+      // Everyone else gets a random circle among themselves
+      let rest = fisherYates([...Array(people.length).keys()].filter((i) => !used.has(i)));
+
+      // A circle of 1 person would give to themselves. If exactly one person is
+      // left over, drop the last swap into the circle instead: A → B still holds,
+      // B gives to the leftover person, who gives to A.
+      if (rest.length === 1 && swaps.length) {
+        const [a, b] = swaps.pop();
+        rest = [a, b].concat(rest);
+      }
+
+      let pairs = rest.length ? circlePairs(rest) : [];
+      swaps.forEach(([a, b]) => {
+        pairs.push({ giver: a, receiver: b }, { giver: b, receiver: a });
+      });
+      // Sort by giver so the send list matches the participant order
+      pairs.sort((a, b) => a.giver - b.giver);
+      return pairs;
+    }
+
+    /* =====================================================================
+       WHATSAPP MESSAGE
+       ===================================================================== */
+    function buildMessage(giverName, receiverName) {
+      const o = state.organizer;
+      const lines = [
+        "🎅 Hi " + giverName + "!",
+        "Dialog Finance Secret Santa is here 🎁",
+        "You are the Secret Santa for: *" + receiverName + "*"
+      ];
+      if (o.budget.trim()) lines.push("Budget: " + o.budget.trim());
+      if (o.date)          lines.push("Exchange date: " + formatDate(o.date));
+      if (o.note.trim())   lines.push(o.note.trim());
+      lines.push("Keep it a secret! 🤫");
+      lines.push("– " + o.name.trim());
+      return lines.join("\n");
+    }
+
+    function whatsappUrl(phone, message) {
+      const text = encodeURIComponent(message);
+      return state.useWaMe
+        ? "https://wa.me/" + phone + "?text=" + text
+        : "https://web.whatsapp.com/send?phone=" + phone + "&text=" + text;
+    }
+
+    /* =====================================================================
+       RENDERING
+       ===================================================================== */
+    function render() {
+      // Show only the current step
+      [1, 2, 3].forEach((n) => {
+        $("step-" + n).classList.toggle("hidden", state.step !== n);
+        const ind = $("ind-" + n);
+        ind.classList.toggle("active", state.step === n);
+        ind.classList.toggle("done", state.step > n);
+      });
+
+      if (state.step === 1) renderStep1();
+      if (state.step === 2) renderStep2();
+      if (state.step === 3) renderStep3();
+      window.scrollTo(0, 0);
+    }
+
+    function renderStep1() {
+      const o = state.organizer;
+      $("org-name").value = o.name;
+      $("org-budget").value = o.budget;
+      $("org-date").value = o.date;
+      $("org-note").value = o.note;
+      showError("err-1", []);
+    }
+
+    function renderStep2() {
+      renderMemberRows();
+      $("include-me").checked = state.organizer.includeMe;
+      $("org-phone").value = state.organizer.phone;
+      $("org-phone-wrap").classList.toggle("hidden", !state.organizer.includeMe);
+      updateCount();
+      showError("err-2", []);
+    }
+
+    function renderMemberRows() {
+      $("member-list").innerHTML = state.members.map((m, i) => `
+        <div class="member-row">
+          <input type="text" class="m-name" data-i="${i}" placeholder="Name" value="${esc(m.name)}" aria-label="Member ${i + 1} name" />
+          <input type="tel" class="m-phone" data-i="${i}" placeholder="WhatsApp number" value="${esc(m.phone)}" aria-label="Member ${i + 1} phone" />
+          <button class="del-btn" data-del="${i}" title="Remove" aria-label="Remove member ${i + 1}">✕</button>
+        </div>`).join("");
+    }
+
+    function updateCount() {
+      const filled = state.members.filter((m) => m.name.trim()).length + (state.organizer.includeMe ? 1 : 0);
+      $("participant-count").textContent = "Participants so far: " + filled + " (minimum " + MIN_PARTICIPANTS + ")";
+    }
+
+    function renderStep3() {
+      const o = state.organizer;
+      const sentCount = state.sent.filter(Boolean).length;
+
+      // Event summary
+      let html = "<b>Organizer:</b> " + esc(o.name);
+      if (o.budget.trim()) html += "<br><b>Budget:</b> " + esc(o.budget);
+      if (o.date)          html += "<br><b>Exchange date:</b> " + esc(formatDate(o.date));
+      html += "<br><b>Participants:</b> " + state.participants.length;
+      $("summary").innerHTML = html;
+
+      $("use-wame").checked = state.useWaMe;
+      $("progress").textContent = "Sent: " + sentCount + " / " + state.participants.length +
+        (sentCount === state.participants.length ? "  🎉 All done!" : "");
+
+      // One row per giver – receivers are NOT shown (keeps the secret)
+      $("send-list").innerHTML = state.pairs.map((p) => {
+        const giver = state.participants[p.giver];
+        const receiver = state.participants[p.receiver];
+        const url = whatsappUrl(giver.phone, buildMessage(giver.name, receiver.name));
+        const sent = !!state.sent[p.giver];
+        return `
+          <div class="person">
+            <div class="who">
+              <div class="name">${esc(giver.name)}</div>
+              <div class="phone">${esc(displayPhone(giver.phone))}</div>
+            </div>
+            <div class="right">
+              ${sent ? '<span class="badge">Sent ✓</span>' : ""}
+              <a class="btn btn-small wa-btn ${sent ? "sent" : ""}" href="${esc(url)}"
+                 target="_blank" rel="noopener noreferrer" data-sent="${p.giver}">
+                 💬 ${sent ? "Send again" : "Send on WhatsApp"}
+              </a>
+            </div>
+          </div>`;
+      }).join("");
+
+      // Keep revealed pairs in sync if they are open
+      if (!$("reveal-card").classList.contains("hidden")) renderPairs();
+    }
+
+    function renderPairs() {
+      $("pairs-table").innerHTML = state.pairs.map((p) =>
+        `<tr><td>${esc(state.participants[p.giver].name)}</td>
+             <td class="arrow">🎁→</td>
+             <td>${esc(state.participants[p.receiver].name)}</td></tr>`).join("");
+    }
+
+    /* =====================================================================
+       STEP 1 – events
+       ===================================================================== */
+    function readStep1() {
+      state.organizer.name = $("org-name").value;
+      state.organizer.budget = $("org-budget").value;
+      state.organizer.date = $("org-date").value;
+      state.organizer.note = $("org-note").value;
+      saveState();
+    }
+
+    ["org-name", "org-budget", "org-date", "org-note"].forEach((id) =>
+      $(id).addEventListener("input", readStep1));
+
+    $("btn-next-1").addEventListener("click", () => {
+      readStep1();
+      if (!state.organizer.name.trim()) {
+        showError("err-1", ["Organizer name is required."]);
+        $("org-name").focus();
+        return;
+      }
+      state.step = 2;
+      saveState();
+      render();
+    });
+
+    /* =====================================================================
+       STEP 2 – events
+       ===================================================================== */
+    // Typing in a member row (event delegation – rows are re-rendered)
+    $("member-list").addEventListener("input", (e) => {
+      const i = Number(e.target.dataset.i);
+      if (Number.isNaN(i)) return;
+      if (e.target.classList.contains("m-name"))  state.members[i].name = e.target.value;
+      if (e.target.classList.contains("m-phone")) state.members[i].phone = e.target.value;
+      saveState();
+      updateCount();
+    });
+
+    // Delete a member row
+    $("member-list").addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-del]");
+      if (!btn) return;
+      state.members.splice(Number(btn.dataset.del), 1);
+      saveState();
+      renderMemberRows();
+      updateCount();
+    });
+
+    $("btn-add").addEventListener("click", () => {
+      state.members.push({ name: "", phone: "" });
+      saveState();
+      renderMemberRows();
+      // Focus the new name field
+      const names = document.querySelectorAll(".m-name");
+      names[names.length - 1].focus();
+    });
+
+    $("include-me").addEventListener("change", (e) => {
+      state.organizer.includeMe = e.target.checked;
+      $("org-phone-wrap").classList.toggle("hidden", !e.target.checked);
+      saveState();
+      updateCount();
+    });
+
+    $("org-phone").addEventListener("input", (e) => {
+      state.organizer.phone = e.target.value;
+      saveState();
+    });
+
+    $("btn-back-2").addEventListener("click", () => {
+      state.step = 1;
+      saveState();
+      render();
+    });
+
+    /**
+     * Build the participant list and check all the rules.
+     * Returns { errors: [...], participants: [{ name, phone }] }
+     */
+    function validateMembers() {
+      const errors = [];
+      const participants = [];
+
+      // Ignore rows where both fields are completely empty
+      const rows = state.members.filter((m) => m.name.trim() || m.phone.trim());
+
+      rows.forEach((m, idx) => {
+        const label = m.name.trim() || "Row " + (idx + 1);
+        if (!m.name.trim()) errors.push(label + ": name is empty.");
+        const phone = normalizePhone(m.phone);
+        if (!m.phone.trim()) errors.push(label + ": phone number is empty.");
+        else if (!isValidPhone(phone)) errors.push(label + ": phone number \"" + m.phone.trim() + "\" doesn't look valid.");
+        participants.push({ name: m.name.trim(), phone });
+      });
+
+      if (state.organizer.includeMe) {
+        const phone = normalizePhone(state.organizer.phone);
+        if (!state.organizer.phone.trim()) errors.push("Organizer's phone number is required when you're in the draw.");
+        else if (!isValidPhone(phone)) errors.push("Organizer's phone number doesn't look valid.");
+        participants.push({ name: state.organizer.name.trim(), phone });
+      }
+
+      if (participants.length < MIN_PARTICIPANTS) {
+        errors.push("You need at least " + MIN_PARTICIPANTS + " participants (you have " + participants.length + ").");
+      }
+
+      // Duplicate names (case-insensitive)
+      const seenNames = new Set();
+      participants.forEach((p) => {
+        const key = p.name.toLowerCase().replace(/\s+/g, " ");
+        if (!key) return;
+        if (seenNames.has(key)) errors.push("Duplicate name: " + p.name + ".");
+        seenNames.add(key);
+      });
+
+      // Duplicate phone numbers (after normalizing)
+      const seenPhones = new Set();
+      participants.forEach((p) => {
+        if (!p.phone) return;
+        if (seenPhones.has(p.phone)) errors.push("Duplicate phone number: " + displayPhone(p.phone) + " (" + p.name + ").");
+        seenPhones.add(p.phone);
+      });
+
+      return { errors, participants };
+    }
+
+    $("btn-shuffle").addEventListener("click", () => {
+      const { errors, participants } = validateMembers();
+      if (errors.length) { showError("err-2", errors); return; }
+
+      state.participants = participants;
+      state.pairs = makePairs(participants);
+      state.sent = participants.map(() => false);
+      state.celebrated = false;
+      state.step = 3;
+      $("reveal-card").classList.add("hidden");
+      saveState();
+      render();
+      giftBurst();   // 🎉
+    });
+
+    /* =====================================================================
+       STEP 3 – events
+       ===================================================================== */
+    // Clicking "Send on WhatsApp" – link opens in a new tab, we mark it sent
+    $("send-list").addEventListener("click", (e) => {
+      const link = e.target.closest("[data-sent]");
+      if (!link) return;
+      state.sent[Number(link.dataset.sent)] = true;
+      saveState();
+      // Re-render after the browser has started opening the link
+      setTimeout(renderStep3, 50);
+    });
+
+    $("use-wame").addEventListener("change", (e) => {
+      state.useWaMe = e.target.checked;
+      saveState();
+      renderStep3();
+    });
+
+    $("btn-reshuffle").addEventListener("click", () => {
+      const sentCount = state.sent.filter(Boolean).length;
+      let msg = "Reshuffle everyone? This creates brand new pairs.";
+      if (sentCount > 0) {
+        msg = "⚠️ " + sentCount + " message(s) were already sent!\n\n" +
+              "If you reshuffle, those people will have the WRONG assignment " +
+              "and you must message EVERYONE again.\n\nReshuffle anyway?";
+      }
+      if (!confirm(msg)) return;
+      state.pairs = makePairs(state.participants);
+      state.sent = state.participants.map(() => false);
+      state.celebrated = false;
+      $("reveal-card").classList.add("hidden");
+      saveState();
+      renderStep3();
+      giftBurst();   // 🎉
+    });
+
+    $("btn-reveal").addEventListener("click", () => {
+      if (!confirm("Reveal ALL pairs?\n\nOnly do this for backup or troubleshooting. Make sure nobody else is looking at your screen! 👀")) return;
+      renderPairs();
+      $("reveal-card").classList.remove("hidden");
+      $("reveal-card").scrollIntoView({ behavior: "smooth" });
+    });
+
+    $("btn-hide-pairs").addEventListener("click", () => {
+      $("reveal-card").classList.add("hidden");
+      $("pairs-table").innerHTML = "";
+    });
+
+    $("btn-back-3").addEventListener("click", () => {
+      const sentCount = state.sent.filter(Boolean).length;
+      let msg = "Go back to edit members? This will clear the current shuffle.";
+      if (sentCount > 0) msg = "⚠️ " + sentCount + " message(s) were already sent.\n\n" + msg;
+      if (!confirm(msg)) return;
+      state.participants = [];
+      state.pairs = [];
+      state.sent = [];
+      state.step = 2;
+      $("reveal-card").classList.add("hidden");
+      saveState();
+      render();
+    });
+
+    /* =====================================================================
+       START OVER – clears everything
+       ===================================================================== */
+    function startOver() {
+      if (!confirm("Start over? This deletes ALL saved data (organizer, members and the shuffle).")) return;
+      try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* ignore */ }
+      state = freshState();
+      $("reveal-card").classList.add("hidden");
+      render();
+    }
+    $("btn-reset-1").addEventListener("click", startOver);
+    $("btn-reset-3").addEventListener("click", startOver);
+
+    /* =====================================================================
+       FESTIVE ANIMATIONS – snow, twinkling lights, gift burst
+       ===================================================================== */
+    const SNOWFLAKE_COUNT = isMobile() ? 25 : 45;   // fewer on phones
+    const rand = (min, max) => min + Math.random() * (max - min);
+
+    // Falling snowflakes, each with its own size, speed and start position
+    function startSnow() {
+      const snow = $("snow");
+      for (let i = 0; i < SNOWFLAKE_COUNT; i++) {
+        const f = document.createElement("span");
+        f.className = "flake";
+        f.textContent = Math.random() < 0.5 ? "❄" : "•";
+        f.style.left = rand(0, 100) + "vw";
+        f.style.fontSize = rand(8, 22) + "px";
+        f.style.opacity = rand(0.5, 1).toFixed(2);
+        const fall = rand(8, 18);
+        // negative delay = flake starts part-way down, so the screen isn't empty at first
+        f.style.animationDuration = fall + "s, " + rand(2, 5) + "s";
+        f.style.animationDelay = -rand(0, fall) + "s, 0s";
+        snow.appendChild(f);
+      }
+    }
+
+    // String of twinkling lights under the header (enough bulbs for the screen width)
+    function addLights() {
+      const lights = document.createElement("div");
+      lights.className = "lights";
+      lights.setAttribute("aria-hidden", "true");
+      const bulbs = Math.min(40, Math.ceil(window.innerWidth / 32));
+      for (let i = 0; i < bulbs; i++) {
+        const b = document.createElement("span");
+        b.className = "bulb";
+        lights.appendChild(b);
+      }
+      document.querySelector("header").after(lights);
+    }
+
+    // A one-off shower of gifts & stars (used after shuffling and when all are sent)
+    function giftBurst() {
+      const items = ["🎁", "🎄", "⭐", "🎅", "❄️", "🍬", "🔔"];
+      for (let i = 0; i < 35; i++) {
+        const e = document.createElement("span");
+        e.className = "burst";
+        e.textContent = items[Math.floor(Math.random() * items.length)];
+        e.style.left = rand(0, 95) + "vw";
+        e.style.fontSize = rand(18, 34) + "px";
+        e.style.animationDuration = rand(1.8, 3.2) + "s";
+        e.style.animationDelay = rand(0, 0.8) + "s";
+        e.addEventListener("animationend", () => e.remove());
+        document.body.appendChild(e);
+      }
+    }
+
+    // Celebrate: after shuffling, and when the last message is sent
+    // (Shuffle and Reshuffle call giftBurst() directly in their handlers above.)
+    $("send-list").addEventListener("click", (e) => {
+      if (!e.target.closest("[data-sent]")) return;
+      if (state.sent.length && state.sent.every(Boolean) && !state.celebrated) {
+        state.celebrated = true;
+        saveState();
+        giftBurst();
+      }
+    });
+
+    /* =====================================================================
+       BOOT
+       ===================================================================== */
+    startSnow();
+    addLights();
+    // Safety: if saved data says step 3 but the shuffle is missing, go back to step 2
+    if (state.step === 3 && (!state.pairs.length || !state.participants.length)) state.step = 2;
+    render();
+  </script>
+</body>
+</html>
